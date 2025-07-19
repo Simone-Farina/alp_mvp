@@ -1,0 +1,5 @@
+[project]
+name = "alp"
+version = "0.0.0"
+description = "Adaptive Learning Platform MVP"
+dependencies = []

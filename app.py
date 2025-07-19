@@ -5,6 +5,8 @@ from alp.core.ai_helper import detect_learning_style
 from alp.db.models import User
 from alp.db.session import SessionLocal
 
+PAGE = st.sidebar.selectbox("Navigate", ["Dashboard", "Add Note"])
+
 
 def get_user():
     db = SessionLocal()
@@ -49,5 +51,25 @@ if user is None:
             st.stop()
 
 else:
-    st.success(f"Welcome back, **{user.name}**. Your learning style: **{user.learning_style}**")
-    st.write("🎯 Next: add notes or request a learning path. (Coming in next milestones)")
+    st.sidebar.markdown(f"**User:** {user.name}  \nStyle: *{user.learning_style}*")
+
+    if PAGE == "Dashboard":
+        st.header("Your Dashboard")
+        st.write("Graph view & learning paths coming next.")
+    elif PAGE == "Add Note":
+        st.header("Add a new Note")
+
+        title = st.text_input("Title / Topic")
+        content = st.text_area("Markdown Content", height=200)
+        # IDEA: this text input should autocomplete from available graph nodes
+        parent = st.text_input(
+            "Optional broader topic this fits under (leave blank for root)"
+        )
+        if st.button("Save Note"):
+            if not title or not content:
+                st.error("Title and content are required.")
+            else:
+                from alp.core.graph_ops import create_known_concept
+
+                create_known_concept(user, title, content, parent or None)
+                st.success(f"Note '{title}' saved and added to your graph!")
