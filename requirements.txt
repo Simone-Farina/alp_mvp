@@ -4,3 +4,4 @@ networkx==3.3
 sqlalchemy==2.0.30
 pytest==8.2.0
 python-dotenv==1.0.1
+streamlit-cytoscapejs==0.0.2
