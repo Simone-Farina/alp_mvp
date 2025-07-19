@@ -2,6 +2,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from alp.core.ai_helper import detect_learning_style
+from alp.core.parent_suggester import suggest_parent_via_ai
 from alp.db.models import User
 from alp.db.session import SessionLocal
 
@@ -61,10 +62,21 @@ else:
 
         title = st.text_input("Title / Topic")
         content = st.text_area("Markdown Content", height=200)
-        # IDEA: this text input should autocomplete from available graph nodes
         parent = st.text_input(
             "Optional broader topic this fits under (leave blank for root)"
         )
+
+        use_ai = st.checkbox("Let AI suggest parent topic")
+
+        if use_ai and title and content:
+            with st.spinner("Asking AI..."):
+                suggestion = suggest_parent_via_ai(title, content)
+                if suggestion:
+                    parent = suggestion
+                    st.success(f"AI suggests: **{parent}**")
+                else:
+                    st.info("AI found no broader parent (root).")
+
         if st.button("Save Note"):
             if not title or not content:
                 st.error("Title and content are required.")

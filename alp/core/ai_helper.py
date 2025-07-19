@@ -13,7 +13,7 @@ STYLES: list[Literal["Visual", "Auditory", "Kinesthetic", "Analytical"]] = [
 
 # IDEA: if for some reason the gpt didn't give us one of the expected answers
 #       we should store in a DB table this status flag signaling that the assessment must be completed again
-def detect_learning_style(answers: dict[str, str], use_gpt: bool = True) -> str:
+def detect_learning_style(answers: dict[str, str], use_gpt: bool = False) -> str:
     """
         Given a dict of question -> answer, return a learning style string.
         If use_gpt is False or OPENAI_API_KEY is missing, fall back to a heuristic.
