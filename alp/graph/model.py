@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import networkx as nx
 from typing import Iterable
+
+import networkx as nx
 
 # Public constants (styling keys later)
 KNOWN_ATTR = "known"
@@ -28,11 +29,11 @@ class KnowledgeGraph:
         self.version += 1
 
     def add_concept(
-        self,
-        concept_id: int,
-        name: str,
-        known: bool,
-        content: str | None = None,
+            self,
+            concept_id: int,
+            name: str,
+            known: bool,
+            content: str | None = None,
     ) -> None:
         self.G.add_node(
             concept_id,
@@ -94,23 +95,43 @@ class KnowledgeGraph:
     # ------------------------------------------------------------------
     # Export (for frontend)
     # ------------------------------------------------------------------
-    def to_cytoscape_elements(self) -> list[dict]:
-        """
-        Produce cytoscape-compatible element dicts.
-        """
+    def to_cytoscape_elements(self, highlight_path: list[int] | None = None) -> list[dict]:
+        highlight_edges: set[tuple[int, int]] = set()
+        if highlight_path and len(highlight_path) > 1:
+            for u, v in zip(highlight_path, highlight_path[1:]):
+                if self.G.has_edge(u, v):
+                    highlight_edges.add((u, v))
+                elif self.G.has_edge(v, u):
+                    highlight_edges.add((v, u))  # undirected fallback
+
+        # ----- POSITION CALCULATION -----
+        pos = nx.spring_layout(self.G, seed=42)
+
+        # Scale & shift to nicer canvas coordinates
+        def scale(p):
+            return float(p[0]) * 500 + 300, float(p[1]) * 500 + 300
+
         elements: list[dict] = []
         for cid, data in self.G.nodes(data=True):
-            elements.append(
-                {
-                    "data": {
-                        "id": str(cid),
-                        "label": data.get(NAME_ATTR),
-                        "known": str(data.get(KNOWN_ATTR, False)),
-                    }
-                }
-            )
+            x, y = scale(pos[cid])
+            node_el = {
+                "data": {
+                    "id": str(cid),
+                    "label": data.get("name"),
+                    "known": str(data.get("known", False)),
+                },
+                "position": {"x": x, "y": y},
+            }
+            if highlight_path and cid in highlight_path:
+                node_el["data"]["pathHighlight"] = "true"
+            elements.append(node_el)
+
         for u, v in self.G.edges():
-            elements.append({"data": {"source": str(u), "target": str(v)}})
+            edge_el = {"data": {"source": str(u), "target": str(v)}}
+            if (u, v) in highlight_edges:
+                edge_el["data"]["pathHighlight"] = "true"
+            elements.append(edge_el)
+
         return elements
 
     # ------------------------------------------------------------------
