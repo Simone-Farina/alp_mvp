@@ -9,7 +9,7 @@ from alp.db.session import SessionLocal, session_scope
 # ---------------------------------------------------------------------------
 # Navigation
 # ---------------------------------------------------------------------------
-PAGE = st.sidebar.selectbox("Navigate", ["Dashboard", "Add Note", "Graph"])
+PAGE = st.sidebar.selectbox("Navigate", ["Dashboard", "Add Note", "Graph", "Learn"])
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ def _rerun():
 # ---------------------------------------------------------------------------
 # Init
 # ---------------------------------------------------------------------------
-load_dotenv()
+load_dotenv(".env")
 st.title("Adaptive Learning Platform – MVP")
 
 user = get_user()
@@ -146,6 +146,59 @@ elif PAGE == "Add Note":
             cache_key = f"kg_{user.id}"
             st.session_state["kg_cache"].pop(cache_key, None)
             st.success(f"Note '{title}' saved and added to your graph!")
+
+# ---------------------------------------------------------------------------
+# Learn Page
+# ---------------------------------------------------------------------------
+elif PAGE == "Learn":
+    st.header("Generate Learning Path")
+
+    topic = st.text_input("Target Topic", placeholder="e.g. Recursion")
+    depth = st.slider("Depth (1=overview, 4=deep)", 1, 4, 2)
+    max_nodes = st.number_input("Max nodes", 3, 30, 10, step=1)
+
+    if st.button("Generate Path"):
+        if not topic.strip():
+            st.error("Please enter a topic.")
+        else:
+            from alp.graph.service import get_or_load_graph
+            from alp.core.learning_plan import generate_learning_plan
+            from alp.graph.inject import inject_learning_plan
+
+            kg = get_or_load_graph(user.id, st.session_state["kg_cache"])
+            # Sample known concepts (optional context compression)
+            known_names = [
+                data.get("name") for cid, data in kg.G.nodes(data=True)
+                if data.get("known")
+            ]
+            # take a small sample to avoid huge prompts
+            known_sample = known_names[:25]
+
+            with st.spinner("Calling AI..."):
+                plan = generate_learning_plan(topic, depth, user.learning_style, max_nodes, known_sample)
+
+            if not plan:
+                st.error("Failed to generate a learning plan (no API key or parse error).")
+            else:
+                added, reused, skipped = inject_learning_plan(
+                    user.id, kg, plan, depth, max_nodes
+                )
+                # Invalidate any elements cache if you added one (optional)
+                if "elements_cache" in st.session_state:
+                    st.session_state["elements_cache"].clear()
+                st.success(f"Integrated plan: {added} new, {reused} reused.")
+                if skipped:
+                    st.info(f"Skipped unknown prerequisites: {', '.join(skipped)}")
+
+                st.markdown("### Injected Nodes (Filtered)")
+                filtered = plan.filtered(depth, max_nodes)
+                for node in filtered.nodes:
+                    st.markdown(
+                        f"- **{node.name}** (d{node['difficulty']}): "
+                        f"{(node.get('summary') or '')[:200]}"
+                    )
+                st.markdown("Go to the **Graph** page to view them.")
+
 
 
 # ---------------------------------------------------------------------------

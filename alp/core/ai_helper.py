@@ -1,14 +1,14 @@
-import os, random
+import os
+import random
 from typing import Literal
 
-try:
-    import openai
-except ImportError:
-    openai = None
+from openai import OpenAI
 
 STYLES: list[Literal["Visual", "Auditory", "Kinesthetic", "Analytical"]] = [
     "Visual", "Auditory", "Kinesthetic", "Analytical"
 ]
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 # IDEA: if for some reason the gpt didn't give us one of the expected answers
@@ -18,7 +18,7 @@ def detect_learning_style(answers: dict[str, str], use_gpt: bool = False) -> str
         Given a dict of question -> answer, return a learning style string.
         If use_gpt is False or OPENAI_API_KEY is missing, fall back to a heuristic.
     """
-    if use_gpt and openai and os.getenv("OPENAI_API_KEY"):
+    if use_gpt:
         prompt = (
                 "You are an educational psychologist. "
                 "Classify the learner into one of these styles: "
@@ -26,7 +26,7 @@ def detect_learning_style(answers: dict[str, str], use_gpt: bool = False) -> str
                 + "\n".join(f"- {q}: {a}" for q, a in answers.items())
                 + "\nAnswer with ONLY the style word."
         )
-        resp = openai.ChatCompletion.create(
+        resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0
