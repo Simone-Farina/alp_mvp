@@ -1,14 +1,20 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from __future__ import annotations
+
+import datetime as dt
+import uuid
+
 from sqlalchemy import String, DateTime, Integer, ForeignKey, Text, Boolean
-import uuid, datetime as dt
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
+    """Base class for SQLAlchemy declarative models."""
     pass
 
 
 class User(Base):
-    __tablename__ = 'user'
+    """User account model storing user profile (e.g., learning style)."""
+    __tablename__ = "user"
     id: Mapped[str] = mapped_column(
         String, primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -18,6 +24,7 @@ class User(Base):
 
 
 class Note(Base):
+    """Note model storing raw note content added by the user."""
     __tablename__ = "note"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id"), nullable=False)
@@ -26,6 +33,7 @@ class Note(Base):
 
 
 class Concept(Base):
+    """Concept model representing a knowledge graph node (may reference a Note)."""
     __tablename__ = "concept"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id"), nullable=False)
@@ -35,6 +43,7 @@ class Concept(Base):
 
 
 class Edge(Base):
+    """Directed edge in the knowledge graph (source -> target concept relationship)."""
     __tablename__ = "edge"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id"), nullable=False)
